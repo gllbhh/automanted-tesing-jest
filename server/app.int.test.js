@@ -110,3 +110,94 @@ test("5) Created task appears in GET /", async () => {
 	expect(res.body.length).toBe(1);
 	expect(res.body[0].description).toBe("Test task");
 });
+
+/*
+ * POST /create with invalid tocken → 401
+ *
+ */
+test("6) POST /create with invalid token → 401", async () => {
+	// Create a task.
+	const res = await request(app)
+		.post("/create")
+		.set("Authorization", "invalid-token")
+		.send({ task: { description: "Test task" } });
+
+	// Expect 401 because the 'auth' middleware blocks requests with invalid tokens.
+	expect(res.status).toBe(401);
+	//console.log(res.body);
+	expect(res.body.message).toBe("Failed to authenticate token");
+});
+
+/*
+ * DELETE /1 removes task
+ *
+ */
+test("7) DELETE /delete/:id removes task", async () => {
+	const token = getToken();
+
+	// Create a task to delete.
+	const createRes = await request(app)
+		.post("/create")
+		.set("Authorization", token)
+		.send({ task: { description: "Task to delete" } });
+	//console.log(createRes.body);
+	//const taskId = createRes.body.id;
+	const taskId = 1;
+
+	// Delete the task.
+	const deleteRes = await request(app).delete(`/1`).set("Authorization", token);
+	expect(deleteRes.status).toBe(204);
+	//console.log(deleteRes.body);
+
+	// Verify the task is removed.
+	const getRes = await request(app).get("/");
+	//console.log(getRes.body);
+	expect(getRes.status).toBe(200);
+	expect(getRes.body.length).toBe(0);
+});
+
+/*
+ * DELETE /999 returns 404
+ *
+ */
+test("8) DELETE /delete/:id returns 404 for non-existent task", async () => {
+	const token = getToken();
+
+	const taskId = 999;
+
+	// try to delete the task.
+	const deleteRes = await request(app).delete(`/${taskId}`).set("Authorization", token);
+	expect(deleteRes.status).toBe(404);
+	//console.log(deleteRes.body);
+});
+
+/*
+ * POST /create with too short description → 400
+ */
+test("9) POST /create with too short description → 400", async () => {
+	const token = getToken(); // Generate a valid JWT for this request.
+
+	const res = await request(app)
+		.post("/create")
+		.set("Authorization", token) // Set the Authorization header — this satisfies the 'auth' middleware.
+		.send({ task: { description: "A" } });
+
+	// 400 Bad Request indicates the resource was rejected due to validation.
+	expect(res.status).toBe(400);
+
+	// The returned error object must have an 'error' property.
+	expect(res.body).toHaveProperty("error");
+	expect(res.body.error).toBe("Description too short");
+});
+
+/*
+ * GET / when no tasks exist → returns empty array
+ */
+test("10) GET / with no tasks → returns empty array", async () => {
+	const res = await request(app).get("/");
+	expect(res.status).toBe(200);
+	//console.log(res.body);
+	// check that the response body is an empty array
+	expect(Array.isArray(res.body)).toBe(true);
+	expect(res.body.length).toBe(0);
+});

@@ -21,9 +21,9 @@ export const getAll = () => [...tasks];
  * @returns {object} The newly created task object { id, description }.
  */
 export const create = (description) => {
-  const task = { id: nextId++, description };
-  tasks.push(task);
-  return task;
+	const task = { id: nextId++, description };
+	tasks.push(task);
+	return task;
 };
 
 /**
@@ -32,6 +32,20 @@ export const create = (description) => {
  * each test starts with a clean, empty list of tasks.
  */
 export const reset = () => {
-  tasks = [];
-  nextId = 1;
+	tasks = [];
+	nextId = 1;
+};
+
+/*
+ * Removes a task by its ID.
+ * @param {number|string} id - The ID of the task to delete.
+ * @returns {boolean} True if the task was found and deleted, false if not found.
+ */
+export const deleteById = (id) => {
+	const index = tasks.findIndex((t) => t.id === parseInt(id));
+	if (index === -1) {
+		return false; // Task not found
+	}
+	tasks.splice(index, 1);
+	return true; // Task deleted successfully
 };
